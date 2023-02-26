@@ -256,7 +256,7 @@ int Result = dlgDialog("EAGLE-Tools-Printer") {
             dlgSpacing(10);
             dlgVBoxLayout {
                dlgSpacing(10);
-               dlgLabel("EAGLE-Tools-Printer v1.1.1 Copyright (c) 2023 SamyPro (Samuel Prossliner)"); // change version here
+               dlgLabel("EAGLE-Tools-Printer v1.1.2 Copyright (c) 2023 SamyPro (Samuel Prossliner)"); // change version here
                dlgSpacing(10);
                dlgLabel("GitHub Repository: <a href=\"https://github.com/UnSamyPro/EAGLE-Tools-Printer\">Link</a>");
                // dlgLabel(help);

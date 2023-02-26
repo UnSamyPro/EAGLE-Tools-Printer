@@ -27,7 +27,6 @@ This is a fork of the original cam2print from support@cadsoft.de
 */
 
 
-string version = "1.0.6"; // alf@cadsoft.de
 
 string camFname;          // the file name of sch/brd for option outputfile
 if   (schematic) schematic(S) camFname = filesetext(filename(S.name), "");

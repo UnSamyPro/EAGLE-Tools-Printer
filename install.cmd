@@ -138,11 +138,11 @@ CD %filename%\src
 MOVE /Y "_EAGLE-Tools_cam2print.ulp" "%FOLDER%\ulp"
 MOVE /Y "_EAGLE-Tools-Printer.ulp" "%FOLDER%\ulp"
 MOVE /Y "eagle.scr" "%FOLDER%\scr"
-MOVE /Y "_Bestueckungsseite_Film.cam" "%FOLDER%\cam"
-MOVE /Y "_Bestueckungsseite.cam" "%FOLDER%\cam"
-MOVE /Y "_Leiterbahnseite_Film.cam" "%FOLDER%\cam"
-MOVE /Y "_Leiterbahnseite.cam" "%FOLDER%\cam"
-MOVE /Y "_Schaltplan.cam" "%FOLDER%\cam"
+MOVE /Y "cam\_Bestueckungsseite_Film.cam" "%FOLDER%\cam"
+MOVE /Y "cam\_Bestueckungsseite.cam" "%FOLDER%\cam"
+MOVE /Y "cam\_Leiterbahnseite_Film.cam" "%FOLDER%\cam"
+MOVE /Y "cam\_Leiterbahnseite.cam" "%FOLDER%\cam"
+MOVE /Y "cam\_Schaltplan.cam" "%FOLDER%\cam"
 
 ECHO Cleaning up...
 :: delete the temp folder

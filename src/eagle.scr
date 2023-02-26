@@ -1,0 +1,131 @@
+assign F11 window ;
+assign F12 ';';
+assign AF3 ';';
+assign AF4 ';'; 
+assign SF1 change  width;
+assign SF2 window fit;
+assign SF3 grid inch 0.05 2 ;
+assign SF4 grid inch ;
+assign SF5 grid mm  1 5;
+assign SF6 grid mm ;
+assign SF11 'grid mm 0.01 100 ;' mark;
+assign SF12 mark ';' grid last ;
+
+
+BRD:
+use *.lbr;
+set Color_grid 15; 
+Grid mm 1.27 2 dots on;
+set Used_Layer 1 16 17 18 19 20 21 23 25 27 37 38 44 45 121 125;
+Change Width 1;
+Change Size 2.54;
+set color_Layer 37 cyan;
+set color_Layer 38 magenta;
+Layer 37 T-Blatt;
+Layer 38 B-Blatt;
+Layer 100 Z-Blatt
+Menu Add Change Copy Delete Display Grid Group Move Name Quit Rect \
+     Route Script Show Signal Split Text Value Via Window ';'  Wire Write  Edit USE;
+
+MENU '[designlink22.png] Search and order : Run designlink-order.ulp -general;'\
+     '[pcb-service.png] PCB Service : Run pcb-service.ulp;';
+
+MENU 'EAGLE-Tools-Printer: RUN _EAGLE-Tools-Printer.ulp;'\
+     'Layer Wechseln { Bestückungsseite: DISPLAY NONE 1 20 21 25 27 37 45 100; | Leiterbahnseite: DISPLAY NONE 16 17 18 20 38 45 100; | Bestückungsseite_Film: DISPLAY NONE 1 20 21 25 27 45; | Leiterbahnseite_Film: DISPLAY NONE 16 17 18 20 45; }';
+
+SCH:
+use *.lbr;
+set Color_grid 15;
+Grid mm 1.27 2 Dots on;
+Change Width 0.15;
+Change Size 2.54;
+Set Used_Layer 91 92 93 94 95 100 121 125;
+Layer 100 Z-Blatt;
+set color_Layer 100 lmagenta;
+Menu Add Bus Change Copy Delete Display Gateswap Grid Group Invoke Junction \
+     Label Move Name Net Pinswap Quit Script Show Split Value Window ';' \
+     Wire Write Edit Use;
+MENU '[designlink22.png] Search and order {\
+                                          General : Run designlink-order.ulp -general; |\
+                                          Schematic : Run designlink-order.ulp; \
+                                          }'\
+     '[LTspice.png] LT Spice simulation {\
+                    Export: RUN ltspice.ulp /E; |\
+                    Export Setup: RUN ltspice.ulp /E /S; |\
+                    Export Group: RUN ltspice.ulp /E /G; |\
+                    Import: RUN ltspice.ulp /I; \
+     }' \
+;
+MENU 'EAGLE-Tools-Printer: RUN _EAGLE-Tools-Printer.ulp;'\
+     'Layer Wechseln { Schaltplan: DISPLAY ALL -93; }';
+
+
+LBR:
+set used_layer 1 16 17 19 20 21 23 27 ;
+Menu Close Export Open Script Use Write ';' Edit;
+
+MENU '[designlink22.png] Search and order : Run designlink-order.ulp -general;'\
+     '[LTspice.png] LT Spice simulation {\
+                  Export: RUN ltspice.ulp /E; |\
+                  Import: RUN ltspice.ulp /I; \
+     }'\
+     '[pads-pcb.png] PADS package import : RUN import-pads-powerpcb-v5;' \
+;
+
+DEV:
+set used_layer 91 92 93 95 96 100;
+layer 100 Z_Blatt;
+set color_Layer 100 Magenta;
+set Color_grid 15;
+Grid mm 1.27 2 dots on;
+Menu Add Change Copy Connect Delete Display Export Grid Move Name Package \
+     Prefix Quit Script Show Value Window ';' Write Edit;
+MENU '[designlink22.png] Search and order : Run designlink-order.ulp -general;' \
+     '[LTspice.png] LT Spice simulation {\
+                  Export: RUN ltspice.ulp /E; |\
+                  SpiceOrder : RUN spiceorder.ulp; |\
+                  SpiceModel: ATTRIBUTE SPICEMODEL |\
+                  Value2: ATTRIBUTE VALUE2 |\
+                  Import: RUN ltspice.ulp /I; \
+     }'\
+     '[pads-pcb.png] PADS package import : RUN import-pads-powerpcb-v5;'\
+;
+
+SYM:
+set used_layer 91 92 93 95 96 100;
+layer 100 Z_Blatt;
+set color_Layer 100 Magenta;
+set color_grid 15;
+Grid mm 1.27 2 dots On;
+Change Width 0.127;
+Change Size 2.54;
+Change Length Middle;
+Menu Arc Change Copy Cut Delete Display Export Grid Group Move Name Paste \
+     Pin Quit Script Show Split Text Value Window ';' Wire Write Edit;
+MENU '[LTspice.png] LT Spice simulation {\
+                  Export: RUN ltspice.ulp /E; |\
+                  SpiceOrder : RUN spiceorder.ulp; |\
+                  Import: RUN ltspice.ulp /I; \
+     }'\
+;
+
+PAC:
+set color_grid 15;
+Grid mm 1.27 2 dots On;
+Change Width 0.127;
+Change Size 1.27;
+set Used_layer 1 16 17 18 19 20 21 23 25 27 37 38 44 45;
+Menu Add Change Copy Delete Display Grid Group Move Name Pad Quit \
+     Script Show Smd Split Text Window ';' Wire Write Edit;
+# Configuration Script
+#
+# This file can be used to configure the editor windows.
+#
+# Uncomment this if you want a set of useful default shortcuts!
+#SCRIPT default-assign.scr;
+#
+MENU '[LTspice.png] LT Spice simulation {\
+                  Import: RUN ltspice.ulp /I; \
+     }'\
+     '[pads-pcb.png] PADS package import : RUN import-pads-powerpcb-v5;' \
+     ;

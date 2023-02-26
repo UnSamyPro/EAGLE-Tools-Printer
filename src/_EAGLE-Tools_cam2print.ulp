@@ -1,0 +1,544 @@
+/*
+MIT License
+
+Copyright (c) 2023 SamyPro (Samuel Prossliner)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+/*
+This is a fork of the original cam2print from support@cadsoft.de
+*/
+
+
+string version = "1.0.6"; // alf@cadsoft.de
+
+string camFname;          // the file name of sch/brd for option outputfile
+if   (schematic) schematic(S) camFname = filesetext(filename(S.name), "");
+if   (board) board(B) camFname = filesetext(filename(B.name), "");
+string fileprintout = "";
+
+// CAM-Job token
+string tok_job = "[CAM Processor Job]";
+string tok_Descrition = "Description=";
+string description;
+string descriptionLine[];
+int    descrCnt;
+string tok_Section = "Section=";
+string tok_Sec_n   = "[Sec_";
+string section[];
+string tok_Name;
+if (language() == "de") tok_Name  = "Name[de]="; // 2010-06-29
+else tok_Name  = "Name[en]=";
+
+string sec_Name[];
+string tok_Prompt  = "Prompt=";
+string sec_Prompt[];
+string tok_Device  = "Device=";
+string sec_Device[];
+string tok_Wheel   = "Wheel=";
+string sec_Wheel[];
+string tok_Rack    = "Rack=";
+string sec_Rack[];
+string tok_Scale   = "Scale=";
+real   sec_Scale[];
+string tok_Out_put = "Output=";
+string sec_Out_put[];
+string tok_Flags   = "Flags=";
+string sec_Flags[];
+int    mirror[];
+int    rotate[];
+int    upside[];
+int    poscoord[];
+int    quickplot[];
+int    optimize[];
+int    fillpads[];
+int    pageLimit[];
+string tok_Emulate = "Emulate=";
+string sec_Emulate[];
+string tok_Offset  = "Offset=";
+string sec_Offset[];
+real   offset_x[];
+real   offset_y[];
+string tok_Sheet   = "Sheet=";
+int    sec_Sheet[];
+int sheetprint = 3;  // 0 = All, 1 = From To, 2 = This section defined, 3 = Actual
+
+int sheetprint_from[];
+int sheetprint_to[];
+string tok_Tolerance = "Tolerance=";
+string sec_Tolerance[];
+string tolerance0[];
+string tolerance1[];
+string tolerance2[];
+string tolerance3[];
+string tolerance4[];
+string tolerance5[];
+string tok_Pen     = "Pen";
+string sec_Pen[];
+string tok_Page    = "Page=";
+string sec_Page[];
+real page_Height[];
+real page_Width[];
+string tok_Layers  = "Layers=";
+string sec_Layers[];
+string sec_usedlayer[];
+string tok_Colors  = "Colors=";
+string sec_Colors[];
+int    solid[];
+int    black[];
+
+string actualsheet;
+
+string lines[];
+int    nLines;
+string s;
+string nu;
+int    sx = 0;
+
+int    lVisible[];
+int    useLayer[];
+string lNames[] = { " " };
+int    lastsheet = 0;
+string lastSH;
+
+string PageLimit_all = ""; // 2011-03-03 reactivated
+
+string cmd = "";
+int test = 0;
+// int Result = 0; // defined somewhere before
+
+// File handling
+int n = 0;
+string text;
+// string CAMfileName; // defined somewhere before
+int nBytes;
+int align;
+string CAMfile;
+
+string Eagle ="<img src=eagle.bmp>";
+
+
+string realFileName = "";
+real scale = 1.0;
+int maxPages = 1;
+
+
+/*
+
+- MIRROR         spiegelt die Ausgabe
+- ROTATE         dreht die Ausgabe um 90°
+- UPSIDEDOWN     dreht die Ausgabe um 180°. Zusammen mit ROTATE, wird die Zeichnung um insgesamt 270° gedreht
+- BLACK          ignoriert die Farbeinstellungen der Layer und zeichnet alles in Schwarz
+- SOLID          ignoriert die Füllmuster der Layer und zeichnet alles voll ausgefüllt
+
+- CAPTION        druckt eine Bildunterschrift
+- FILE           leitet die Ausgabe in eine Datei um; der Dateiname muss unmittelbar nach dieser Option folgen
+
+PRINTER        druckt auf einen bestimmten Drucker; der Druckername muss unmittelbar nach dieser Option folgen
+- PAPER          druckt auf das angegebene Papierformat; das Papierformat muss unmittelbar nach dieser Option folgen
+- SHEETS         druckt den angegebenen Bereich von Schaltplanseiten; der Bereich (von-bis) muss unmittelbar nach dieser Option folgen
+WINDOW         druckt den momentan sichtbaren Ausschnitt der Zeichnung
+PORTRAIT       druckt in Hochformat
+- LANDSCAPE      druckt in Querformat
+HIERARCHY      druckt die Schaltplanseiten von Modulen in ihrer hierarchischen Verwendung
+*/
+void commandPrint(int sectab) {
+   cmd += "PRINT ";
+
+   sprintf(s, " %.2f -%d", scale, maxPages);
+   cmd += s;
+
+   cmd += " -";
+
+   if(black[sectab])  cmd += " BLACK";
+   else  cmd += " -BLACK";
+   if(solid[sectab])  cmd += " SOLID";
+   else  cmd += " -SOLID";
+   if(mirror[sectab]) cmd += " MIRROR";
+   else  cmd += " -MIRROR";
+   if(rotate[sectab]) cmd += " ROTATE";
+   else  cmd += " -ROTATE";
+   if(upside[sectab]) cmd += " UPSIDEDOWN";
+   else  cmd += " -UPSIDEDOWN";
+   /*
+   if(poscoord[sectab]) ; // not use to print
+   if(quickplot[sectab]); // not use to print
+   if(optimize[sectab]);  // not use to print
+   */
+   cmd += " -CAPTION";
+
+   if (fileprintout) {
+     cmd += " FILE '" + realFileName + "'";
+   }
+
+   cmd += " PAPER a4 SHEETS ALL LANDSCAPE ";
+   cmd += ";\n";
+
+   return;
+}
+
+void viewDescript(void) {
+   string ds;
+   for (int n = 1 ; n < descrCnt; n++ ) {
+      if (ds[0] == ' ') {
+         ds = descriptionLine[n];
+         ds[0] = ' ';
+         descriptionLine[n] = ds;
+      }
+   }
+   descriptionLine[0] = "<qt>" + descriptionLine[0] + "</qt>";
+   ds = strjoin(descriptionLine, '\n');
+   dlgMessageBox(ds, "OK");
+   return;
+}
+
+void readCam(void) {
+   sx = 0;
+   for (int sn = 0; sn < nLines; sn++) {
+      if( strstr(lines[sn], tok_Descrition) == 0) {
+         description = strsub(lines[sn], strlen(tok_Descrition) + 1, strlen(lines[sn]) - (strlen(tok_Descrition)+2) );
+         descrCnt = strsplit (descriptionLine, description, '\\');
+      }
+
+      if( strstr(lines[sn], tok_Sec_n) == 0) {
+         sx = strtol( strsub(lines[sn], strstr(lines[sn], "_") + 1) );
+         sprintf(nu, "%d", sx);
+      }
+
+      if( strstr(lines[sn], tok_Name      ) == 0) {;
+         sec_Name[sx] = strsub(lines[sn], strlen(tok_Name) + 1, strlen(lines[sn]) - (strlen(tok_Name)+2) );
+         sheetprint_from[sx] = 1;
+      }
+
+      if( strstr(lines[sn], tok_Prompt    ) == 0) {;
+         sec_Prompt[sx] = strsub(lines[sn], strlen(tok_Prompt) + 1, strlen(lines[sn]) - (strlen(tok_Prompt)+2) );
+      }
+
+      if( strstr(lines[sn], tok_Device    ) == 0) {
+         sec_Device[sx] = strsub(lines[sn], strlen(tok_Device) + 1, strlen(lines[sn]) - (strlen(tok_Device)+2) );
+      }
+
+      if( strstr(lines[sn], tok_Wheel     ) == 0) {
+         sec_Wheel[sx] = strsub(lines[sn], strlen(tok_Wheel) + 1, strlen(lines[sn]) - (strlen(tok_Wheel)+2) );
+      }
+
+      if( strstr(lines[sn], tok_Rack      ) == 0) {
+         sec_Rack[sx] = strsub(lines[sn], strlen(tok_Rack) + 1, strlen(lines[sn]) - (strlen(tok_Rack)+2) );
+      }
+
+      if( strstr(lines[sn], tok_Scale     ) == 0) {
+         sec_Scale[sx] = strtod(strsub(lines[sn], strlen(tok_Scale), strlen(lines[sn]) - (strlen(tok_Scale)) ) ); // 2011-03-04
+      }
+
+      if( strstr(lines[sn], tok_Out_put   ) == 0) {
+         sec_Out_put[sx] = strsub(lines[sn], strlen(tok_Out_put) + 1, strlen(lines[sn]) - (strlen(tok_Out_put)+2) );
+         int pos = strstr(sec_Out_put[sx], "%N");
+         if (pos >= 0) {
+           sec_Out_put[sx] = strsub(sec_Out_put[sx], 0, pos) + camFname + strsub(sec_Out_put[sx], pos+2);
+         }
+      }
+
+      if( strstr(lines[sn], tok_Flags     ) == 0) {
+         sec_Flags[sx] = strsub(lines[sn], strlen(tok_Flags) + 1, strlen(lines[sn]) - (strlen(tok_Flags)+2) );
+         string fl[];
+         int fn = strsplit(fl, sec_Flags[sx], ' ');
+         mirror[sx]    = strtol(fl[0]);
+         rotate[sx]    = strtol(fl[1]);
+         upside[sx]    = strtol(fl[2]);
+         poscoord[sx]  = strtol(fl[3]);
+         quickplot[sx] = strtol(fl[4]);
+         optimize[sx]  = strtol(fl[5]);
+         fillpads[sx]  = strtol(fl[6]);
+         //Mirror Rotate Upside_down pos._Coord Quick_plot Optimize Fill_Pads
+      }
+
+      if( strstr(lines[sn], tok_Emulate   ) == 0) {;
+         // 3 Flags not used by printer
+      }
+
+         // 2 real Values
+      if( strstr(lines[sn], tok_Offset    ) == 0) {
+         sec_Offset[sx] = strsub(lines[sn], strlen(tok_Offset) + 1, strlen(lines[sn]) - (strlen(tok_Offset)+2) );
+         offset_x[sx] = strtol(sec_Offset[sx]);
+         int oy = strstr(lines[sn], " ");
+         sec_Flags[sx] = strsub(lines[sn], oy + 1, strlen(lines[sn]) - (oy+2) );
+         offset_y[sx] = strtol(sec_Offset[sx]);
+      }
+
+      if( strstr(lines[sn], tok_Sheet ) == 0) {
+         sec_Sheet[sx] = strtod( strsub(lines[sn], strlen(tok_Sheet) , strlen(lines[sn]) - (strlen(tok_Sheet) ) ) );
+      }
+
+      if( strstr(lines[sn], tok_Tolerance ) == 0) {
+         sec_Tolerance[sx] = strsub(lines[sn], strlen(tok_Tolerance) + 1, strlen(lines[sn]) - (strlen(tok_Tolerance)+2) );
+         string tol[] ;
+         int tn = strsplit(tol, sec_Tolerance[sx], ' ');
+         tolerance0[sx] = tol[0];
+         tolerance1[sx] = tol[1];
+         tolerance2[sx] = tol[2];
+         tolerance3[sx] = tol[3];
+         tolerance4[sx] = tol[4];
+         tolerance5[sx] = tol[5];
+      }
+
+      if( strstr(lines[sn], tok_Pen       ) == 0) {
+         // n Pen diameters not used by printer
+      }
+
+      // x y Pages size
+      if( strstr(lines[sn], tok_Page      ) == 0) {
+         page_Height[sx] = strtod( strsub(lines[sn], strlen(tok_Page) + 1, strlen(lines[sn]) - (strlen(tok_Page)+2) ) );
+         int oy = strstr(lines[sn], " ");
+         page_Width[sx] = strtod( strsub(lines[sn], strlen(tok_Page) + 1, strlen(lines[sn]) - (oy+2) ) );
+      }
+
+      // n Layers (max 255)
+      if( strstr(lines[sn], tok_Layers    ) == 0) {
+         sec_Layers[sx] = strsub(lines[sn], strlen(tok_Layers) + 2, strlen(lines[sn]) - (strlen(tok_Layers)+3) );
+         // hier noch die Layer
+      }
+
+       // n Layers (max 255)
+      if( strstr(lines[sn], tok_Colors    ) == 0) {
+         sec_Colors[sx] = strsub(lines[sn], strlen(tok_Colors) + 1, strlen(lines[sn]) - (strlen(tok_Colors)+2) );
+         string color[] ;
+         int cn = strsplit(color, sec_Colors[sx], ' ');
+         // not used by printer
+      }
+      solid[sx] = 1;
+      black[sx] = 1;
+      if (PageLimit_all) pageLimit[sx] = strtod(PageLimit_all); // PageLimit_all 2011-03-03 reactivated
+   }
+   return;
+}
+
+string checkbackslash(string camname) {
+  int pos;
+  do {
+    pos = strchr(camname, '\\');
+    if (pos >= 0) camname[pos] = '/';
+  } while (pos >= 0);
+  return camname;
+}
+
+
+//////////////////// main ////////////////////
+
+if (argc < 2) {
+   dlgMessageBox("Error: No CAM-File selected", "OK");
+   exit (0);
+}
+
+string camFileIndex = argv[1];
+realFileName = argv[2];
+
+string CAMfileName;
+if (camFileIndex == "1") {
+   CAMfileName = "_Bestueckungsseite.cam";
+   scale = 2.0;
+   maxPages = 1;
+} else if (camFileIndex == "2") {
+   CAMfileName = "_Leiterbahnseite.cam";
+   scale = 2.0;
+   maxPages = 1;
+} else if (camFileIndex == "3") {
+   CAMfileName = "_Schaltplan.cam";
+   scale = 1.0;
+   maxPages = 1;
+} else if (camFileIndex == "4") {
+   CAMfileName = "_Bestueckungsseite_Film.cam";
+   scale = 1.0;
+   maxPages = 1;
+} else if (camFileIndex == "5") {
+   CAMfileName = "_Leiterbahnseite_Film.cam";
+   scale = 1.0;
+   maxPages = 1;
+}
+
+CAMfileName = path_cam[0]+"/"+CAMfileName;
+fileprintout = "PDF";
+
+
+if (CAMfileName) {
+   nLines = fileread(lines, CAMfileName);
+   readCam();
+}
+else exit (0);
+
+if (lines[0] != tok_job) {
+   dlgMessageBox(CAMfileName + "\nis not a EAGLE CAM-Job\n" + lines[0], "OK");
+   exit (0);
+}
+
+if (schematic) {
+   schematic(S) {
+   camFname = filesetext(filename(S.name), "");
+      if (sheet) sheet(SH) sprintf(actualsheet, "%d", SH.number);
+   }
+   schematic(S) {
+      S.sheets(SH) {
+         if (lastsheet < SH.number) lastsheet = SH.number;
+      }
+      S.layers(L) {
+         lNames[L.number] = L.name;
+         lVisible[L.number] = L.visible;
+         useLayer[L.number] = L.used;
+      }
+   }
+}
+
+if (board) {
+   board(B) {
+      camFname = filesetext(filename(B.name), "");
+      B.layers(L) {
+         lNames[L.number] = L.name;
+         lVisible[L.number] = L.visible;
+         useLayer[L.number] = L.used;
+      }
+   }
+}
+
+// make print command
+if (test) cmd = "# generatet by " + argv[0] + " from " + CAMfileName + "\n";
+
+for (int tpn = 1; tpn <= sx; tpn++) {
+   string layer[] ;
+   int n = 0;
+   int ln = strsplit(layer, sec_Layers[tpn], ' ');
+   if (test) cmd += "# Section: " + sec_Name[tpn] + "\n";
+   if(board) {
+      if(fillpads[tpn]) {
+         cmd += "SET DISPLAY_MODE NODRILL;\n";
+      }
+      else {
+         cmd += "SET DISPLAY_MODE REAL;\n";
+      }
+      cmd += "RATSNEST;\n";
+      cmd += "DISPLAY NONE ";
+
+      for (int x = 0; x < ln; x++) {
+         int num = strtod(layer[x]);
+         if (num < 90 || num > 100) {
+            if (useLayer[num]) {
+               sprintf(s, " %s", layer[x]);
+               cmd += s;
+               if(num == 21) cmd += " -23 -25 -27 -51";
+               if(num == 22) cmd += " -24 -26 -28 -52";
+               n++;
+            }
+         }
+      }
+      cmd += ";\n";
+      commandPrint(tpn);
+   }
+
+   if(schematic) {
+      cmd += "DISPLAY NONE ";
+      for (int x = 0; x < ln; x++) {
+         int num = strtod(layer[x]);
+         if (useLayer[num]) {
+            if (num >= 90) {
+               sprintf(s, " %s", layer[x]);
+               cmd += s;
+               n++;
+            }
+         }
+      }
+      cmd += ";\n";
+      string sh;
+      switch (sheetprint) {
+         case 0 : schematic(S) {
+               S.sheets(SH) {
+                  sprintf(sh, "EDIT '.s%d';\n", SH.number);
+                  cmd += sh;
+                  commandPrint(tpn);
+               }
+            }
+            break;
+
+         case 1 : for (int prn = sheetprint_from[tpn]; prn <= sheetprint_to[tpn]; prn++) {
+            sprintf(sh, "EDIT '.s%d';\n", prn);
+               cmd += sh;
+               commandPrint(tpn);
+            }
+            break;
+
+         case 2 : sprintf(sh, "EDIT '.s%d';\n", sec_Sheet[tpn]);
+            cmd += sh;
+            commandPrint(tpn);
+            break;
+
+         case 3 : sprintf(sh, "EDIT '.s%s';\n", actualsheet);
+            cmd += sh;
+            commandPrint(tpn);
+            break;
+      }
+   }
+}
+
+cmd += "DISPLAY ";
+if(board) {
+   for(int l = 1; l < 90; l++) {
+      if (useLayer[l]) {
+         if (lVisible[l]) {
+            sprintf(s, " %d", l);
+            cmd += s;
+         }
+         else {
+            sprintf(s, " -%d", l);
+            cmd += s;
+         }
+      }
+   }
+   for(l = 100; l < 256; l++) {
+      if (useLayer[l]) {
+         if (lVisible[l]) {
+            sprintf(s, " %d", l);
+            cmd += s;
+         }
+         else {
+            sprintf(s, " -%d", l);
+            cmd += s;
+         }
+      }
+   }
+   cmd += ";\nSET DISPLAY_MODE REAL;\n";
+}
+
+if(schematic) {
+   for(int l = 91; l < 256; l++) {
+      if (useLayer[l]) {
+         if (lVisible[l]) {
+            sprintf(s, " %d", l);
+            cmd += s;
+         }
+         else {
+            sprintf(s, " -%d", l);
+            cmd += s;
+         }
+      }
+   }
+   cmd += ";\n";
+   sprintf(s, "EDIT '.s%s';\n", actualsheet);
+   cmd += s;
+}
+
+if (test) { if (dlgMessageBox(cmd, "OK", "Cancel") != 0) exit (-1);}
+exit (cmd);

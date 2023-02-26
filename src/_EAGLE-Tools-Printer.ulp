@@ -1,0 +1,384 @@
+/*
+MIT License
+
+Copyright (c) 2023 SamyPro (Samuel Prossliner)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+
+int bestueckungsseite_toggle = 0;
+int leiterbahnseite_toggle = 0;
+int schaltplan_toggle = 0;
+int bestueckungsseite_film_toggle = 0;
+int leiterbahnseite_film_toggle = 0;
+
+
+// START global config
+string globalConfigfile = path_ulp[0]+"/_EAGLE-Tools-Printer_global_config.txt";
+string globalConfigLines[];
+output(globalConfigfile, "a") {} // create file if not exists
+int globalConfigLinesSize = fileread(globalConfigLines, ""+globalConfigfile);
+
+string globalConfigKey[];
+string globalConfigValue[];
+
+for (int i = 0; i < globalConfigLinesSize; i++) {
+   string line = globalConfigLines[i];
+   string splitted[];
+   strsplit(splitted, line, '=');
+   string key = splitted[0];
+   string value = splitted[1];
+   globalConfigKey[i] = key;
+   globalConfigValue[i] = value;
+}
+
+string getGlobalConfigValue(string key) {
+   for (int i = 0; i < globalConfigLinesSize; i++) {
+      if (globalConfigKey[i] == key) {
+         return globalConfigValue[i];
+      }
+   }
+   return "";
+}
+void setGlobalConfigValue(string key, string value) {
+   for (int i = 0; i < globalConfigLinesSize; i++) {
+      if (globalConfigKey[i] == key) {
+         globalConfigValue[i] = value;
+         return;
+      }
+   }
+   globalConfigKey[globalConfigLinesSize] = key;
+   globalConfigValue[globalConfigLinesSize] = value;
+   globalConfigLinesSize++;
+}
+
+string jahr_first = "2022";
+string jahr_last = "23";
+string klasse = "KLASSE";
+string gruppe = "GRUPPE";
+string nachname = "NACHNAME";
+
+if (getGlobalConfigValue("jahr_first")) jahr_first = getGlobalConfigValue("jahr_first");
+else setGlobalConfigValue("jahr_first", jahr_first);
+
+if (getGlobalConfigValue("jahr_last")) jahr_last = getGlobalConfigValue("jahr_last");
+else setGlobalConfigValue("jahr_last", jahr_last);
+
+if (getGlobalConfigValue("klasse")) klasse = getGlobalConfigValue("klasse");
+else setGlobalConfigValue("klasse", klasse);
+
+if (getGlobalConfigValue("gruppe")) gruppe = getGlobalConfigValue("gruppe");
+else setGlobalConfigValue("gruppe", gruppe);
+
+if (getGlobalConfigValue("nachname")) nachname = getGlobalConfigValue("nachname");
+else setGlobalConfigValue("nachname", nachname);
+// END global config
+
+
+
+// START project config
+string projectConfigfile = "_EAGLE-Tools-Printer_project_config.txt";
+if (board) board(B) {
+   string firedir = filedir(B.name + ".brd");
+   projectConfigfile = firedir + "" + projectConfigfile;
+} else if (schematic) schematic(S) {
+   string firedir = filedir(S.name + ".sch");
+   projectConfigfile = firedir + "" + projectConfigfile;
+}
+string projectConfigLines[];
+output(projectConfigfile, "a") {} // create file if not exists
+int projectConfigLinesSize = fileread(projectConfigLines, ""+projectConfigfile);
+
+string projectConfigKey[];
+string projectConfigValue[];
+
+for (int j = 0; j < projectConfigLinesSize; j++) {
+   string line = projectConfigLines[j];
+   string splitted[];
+   strsplit(splitted, line, '=');
+   string key = splitted[0];
+   string value = splitted[1];
+   projectConfigKey[j] = key;
+   projectConfigValue[j] = value;
+}
+
+string getProjectConfigValue(string key) {
+   for (int i = 0; i < projectConfigLinesSize; i++) {
+      if (projectConfigKey[i] == key) {
+         return projectConfigValue[i];
+      }
+   }
+   return "";
+}
+void setProjectConfigValue(string key, string value) {
+   for (int i = 0; i < projectConfigLinesSize; i++) {
+      if (projectConfigKey[i] == key) {
+         projectConfigValue[i] = value;
+         return;
+      }
+   }
+   projectConfigKey[projectConfigLinesSize] = key;
+   projectConfigValue[projectConfigLinesSize] = value;
+   projectConfigLinesSize++;
+}
+
+string projekt = "PROJEKT";
+
+if (getProjectConfigValue("projekt")) projekt = getProjectConfigValue("projekt");
+else setProjectConfigValue("projekt", projekt);
+// END project config
+
+
+
+// START save config
+void saveGlobalConfig() {
+   output(globalConfigfile, "wt") {
+      for (int i = 0; i < globalConfigLinesSize; i++) {
+         if (globalConfigKey[i] != "" && globalConfigValue[i] != "") {
+            string line = globalConfigKey[i] + "=" + globalConfigValue[i];
+            printf(line+"\n");
+         }
+      }
+   }
+}
+
+void saveProjectConfig() {
+   output(projectConfigfile, "wt") {
+      for (int i = 0; i < projectConfigLinesSize; i++) {
+         if (projectConfigKey[i] != "" && projectConfigValue[i] != "") {
+            string line = projectConfigKey[i] + "=" + projectConfigValue[i];
+            printf(line+"\n");
+         }
+      }
+   }
+}
+// END save config
+
+saveGlobalConfig();
+saveProjectConfig();
+
+
+int Result = dlgDialog("EAGLE-Tools-Printer") {
+   dlgTabWidget {
+      int tpn=1;
+      dlgTabPage("Printer") {
+         // dlgHBoxLayout { dlgLabel("<b>JOB Name</b>: " + "IDK NAME HERE OR STUFF IDK"); }
+         dlgHBoxLayout {
+            dlgVBoxLayout {
+               dlgSpacing(10);
+               dlgHBoxLayout {
+                  dlgGroup("Einstellungen") {
+                     dlgHBoxLayout {
+                        dlgVBoxLayout {
+                           dlgLabel("Jahr:");
+                           dlgLabel("Klasse:");
+                           dlgLabel("Gruppe:");
+                           dlgLabel("Nachname:");
+                           dlgLabel("Projekt:");
+                        }
+                        dlgSpacing(10);
+                        dlgVBoxLayout {
+                           dlgHBoxLayout { dlgSpacing(250); } // dont delete this line
+                           dlgHBoxLayout {
+                              dlgStringEdit(jahr_first);
+                              dlgLabel("/");
+                              dlgStringEdit(jahr_last);
+                              dlgStretch(3);
+                              dlgStretch(3);
+                           }
+                           dlgStringEdit(klasse);
+                           dlgStringEdit(gruppe);
+                           dlgStringEdit(nachname);
+                           dlgStringEdit(projekt);
+                           dlgStretch(1);
+                        }
+                        dlgStretch(1);
+                     }
+                     dlgStretch(1);
+                  }
+                  dlgStretch(1);
+                  dlgGroup("Export") {
+                     dlgHBoxLayout {
+                        dlgVBoxLayout {
+                           dlgHBoxLayout { dlgSpacing(250); } // dont delete this line
+                           if (schematic) {
+                              schaltplan_toggle = 1;
+                              dlgCheckBox("Schaltplan", schaltplan_toggle);
+                           }
+                           if (board) {
+                              dlgCheckBox("Bestückungsseite", bestueckungsseite_toggle);
+                              dlgCheckBox("Leiterbahnseite", leiterbahnseite_toggle);
+                           }
+                           if (board) {
+                              bestueckungsseite_film_toggle = 1;
+                              leiterbahnseite_film_toggle = 1;
+                              dlgCheckBox("Bestückungsseite_Film", bestueckungsseite_film_toggle);
+                              dlgCheckBox("Leiterbahnseite_Film", leiterbahnseite_film_toggle);
+                           }
+                        }
+                        dlgStretch(1);
+                     }
+                  }
+               }
+               dlgStretch(0);
+               dlgSpacing(10);
+               dlgLabel(" ");
+               dlgStretch(1);
+            }
+
+            dlgStretch(0);
+            dlgSpacing(15);
+         }
+         dlgSpacing(10);
+         dlgStretch(1);
+         tpn++;
+      }
+      dlgTabPage("&About") {
+         dlgSpacing(10);
+         dlgHBoxLayout {
+            dlgSpacing(10);
+            dlgVBoxLayout {
+               dlgSpacing(10);
+               dlgLabel("EAGLE-Tools-Printer v1.0 Copyright (c) 2023 SamyPro (Samuel Prossliner)");
+               dlgSpacing(10);
+               dlgLabel("GitHub Repository: <a href=\"https://github.com/UnSamyPro/EAGLE-Tools-Printer\">Link</a>");
+               // dlgLabel(help);
+               dlgStretch(1);
+            }
+         }
+      }
+   }
+   dlgHBoxLayout {
+      dlgStretch(0);
+      dlgPushButton("+Export") dlgAccept(1);
+      dlgStretch(0);
+      dlgPushButton("Save And Close") dlgAccept(2);
+      dlgStretch(0);
+      dlgPushButton("-Cancel") dlgReject(0);
+      dlgStretch(1);
+   }
+};
+
+
+if (Result == 0) exit (0);
+
+
+if (getGlobalConfigValue("jahr_first") != jahr_first) setGlobalConfigValue("jahr_first", jahr_first);
+if (getGlobalConfigValue("jahr_last") != jahr_last) setGlobalConfigValue("jahr_last", jahr_last);
+if (getGlobalConfigValue("klasse") != klasse) setGlobalConfigValue("klasse", klasse);
+if (getGlobalConfigValue("gruppe") != gruppe) setGlobalConfigValue("gruppe", gruppe);
+if (getGlobalConfigValue("nachname") != nachname) setGlobalConfigValue("nachname", nachname);
+
+if (getProjectConfigValue("projekt") != projekt) setProjectConfigValue("projekt", projekt);
+
+saveGlobalConfig();
+saveProjectConfig();
+
+if (Result == 2) exit (0);
+
+
+int amountExecutions = bestueckungsseite_toggle + leiterbahnseite_toggle + schaltplan_toggle + bestueckungsseite_film_toggle + leiterbahnseite_film_toggle;
+if (amountExecutions == 0) {
+   string msg = "You have to select at least one output!";
+   dlgMessageBox(msg, "OK");
+   exit (0);
+}
+
+
+
+string replaceWhitespace(string str) {
+   string result = "";
+   for (int i = 0; i < strlen(str); i++) {
+      if (str[i] == ' ') {
+         result += '_';
+      } else {
+         result += str[i];
+      }
+   }
+   return result;
+}
+
+string cmd = "";
+
+while (amountExecutions > 0) {
+   if (bestueckungsseite_toggle == 1) {
+      cmd += "run _EAGLE-Tools_cam2print.ulp "+ "1"+" " +replaceWhitespace(jahr_first)+"_"+replaceWhitespace(jahr_last)+"_"+replaceWhitespace(klasse)+"-"+replaceWhitespace(gruppe)+"-"+replaceWhitespace(nachname)+"-"+replaceWhitespace(projekt)+"_"+"Bestückungsseite"+".pdf;";
+      bestueckungsseite_toggle = 0; 
+   }
+   if (leiterbahnseite_toggle == 1) {
+      cmd += "run _EAGLE-Tools_cam2print.ulp "+ "2"+" " +replaceWhitespace(jahr_first)+"_"+replaceWhitespace(jahr_last)+"_"+replaceWhitespace(klasse)+"-"+replaceWhitespace(gruppe)+"-"+replaceWhitespace(nachname)+"-"+replaceWhitespace(projekt)+"_"+"Leiterbahnseite"+".pdf;";
+      leiterbahnseite_toggle = 0;
+   }
+   if (schaltplan_toggle == 1) {
+      cmd += "run _EAGLE-Tools_cam2print.ulp "+ "3"+" " +replaceWhitespace(jahr_first)+"_"+replaceWhitespace(jahr_last)+"_"+replaceWhitespace(klasse)+"-"+replaceWhitespace(gruppe)+"-"+replaceWhitespace(nachname)+"-"+replaceWhitespace(projekt)+"_"+"Schaltplan"+".pdf;";
+      schaltplan_toggle = 0;
+   }
+   if (bestueckungsseite_film_toggle == 1) {
+      cmd += "run _EAGLE-Tools_cam2print.ulp "+ "4"+" " +replaceWhitespace(jahr_first)+"_"+replaceWhitespace(jahr_last)+"_"+replaceWhitespace(klasse)+"-"+replaceWhitespace(gruppe)+"-"+replaceWhitespace(nachname)+"-"+replaceWhitespace(projekt)+"_"+"Bestückungsseite_Film"+".pdf;";
+      bestueckungsseite_film_toggle = 0;
+   }
+   if (leiterbahnseite_film_toggle == 1) {
+      cmd += "run _EAGLE-Tools_cam2print.ulp "+ "5"+" " +replaceWhitespace(jahr_first)+"_"+replaceWhitespace(jahr_last)+"_"+replaceWhitespace(klasse)+"-"+replaceWhitespace(gruppe)+"-"+replaceWhitespace(nachname)+"-"+replaceWhitespace(projekt)+"_"+"Leiterbahnseite_Film"+".pdf;";
+      leiterbahnseite_film_toggle = 0;
+   }
+   amountExecutions--;
+}
+
+string intToString (int d) {
+   string str = "";
+   sprintf(str, "%d", d);
+   return str;
+}
+
+string layers[];
+int layerCount = 0;
+if (board) {
+   board(B) {
+      B.layers(L) {
+         if (L.visible == 1 && L.used == 1) {
+            layers[layerCount] = intToString(L.number);
+            layerCount++;
+         }
+      }
+   }
+}
+if (schematic) {
+   schematic(S) {
+      S.layers(L) {
+         if (L.visible == 1 && L.used == 1) {
+            layers[layerCount] = intToString(L.number);
+            layerCount++;
+         }
+      }
+   }
+}
+
+
+cmd += "DISPLAY NONE";
+for (int someIncrementer = 0; someIncrementer < layerCount; someIncrementer++) {
+   cmd += " "+layers[someIncrementer];
+}
+cmd += ";";
+
+// debug print for when something goes wrong... again...
+// output("c:/tmp/debug.scr", "wt")  printf("%s", cmd);
+
+exit(cmd);
+//////////////////////////////////////////////////////////////////

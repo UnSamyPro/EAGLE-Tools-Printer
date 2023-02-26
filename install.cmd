@@ -87,11 +87,11 @@ MKDIR EAGLE-Tools-Printer_%version%_temp
 CD EAGLE-Tools-Printer_%version%_temp
 
 ECHO Downloading latest version...
-@REM :: download the zip file
-@REM SET downloadCmd="curl -L -o %filename%.zip https://github.com/UnSamyPro/EAGLE-Tools-Printer/archive/%version%.zip"
-@REM FOR /F "usebackq tokens=*" %%F in (`%downloadCmd%`) DO (
-@REM     SET downloadLocation=%%F
-@REM )
+:: download the zip file
+SET downloadCmd="curl -L -o %filename%.zip https://github.com/UnSamyPro/EAGLE-Tools-Printer/archive/%version%.zip"
+FOR /F "usebackq tokens=*" %%F in (`%downloadCmd%`) DO (
+    SET downloadLocation=%%F
+)
 COPY "C:\Users\SamyP\Documents\GitHub\UnSamyPro\EAGLE-Tools-Printer_%version%.zip" "%filename%.zip"
 
 ECHO Installing latest version...

@@ -22,6 +22,37 @@ Alternatively, you can manually install the tool by following these steps:
 - Then restart EAGLE
 
 
+## Config files
+
+There are two different types of config files:
+
+### `_EAGLE-Tools-Printer_global_config.txt`
+This config file is saved in the `<EAGLEDIR>\ulp` directory and stores global configuration values. These values are used as default settings for all EAGLE projects that use EAGLE-Tools-Printer. Here is an example of what the config file might look like:
+
+```
+jahr_first=2022
+jahr_last=23
+klasse=KLASSE
+gruppe=GRUPPE
+nachname=NACHNAME
+```
+
+The global config file is automatically created after using EAGLE-Tools-Printer for the first time. To edit the values, simply open the `EAGLE-Tools-Printer` GUI, edit the values and click on `Save And Close`.
+
+
+### `_EAGLE-Tools-Printer_project_config.txt`
+This config file is saved in the root directory of each EAGLE project and stores values specific to that project, such as the project name. Here is an example of what the config file might look like:
+
+```
+projekt=LED-Streifen
+```
+
+The project config file is automatically created after using EAGLE-Tools-Printer for the first time. To edit the values, simply open the `EAGLE-Tools-Printer` GUI, edit the values and click on `Save And Close`.
+
+Alternatively you create a new file with the name `_EAGLE-Tools-Printer_project_config.txt` in the root directory of your EAGLE project, and add the necessary values.
+
+
+
 ## License
 
 This project is licensed under the terms of the MIT license. See the [LICENSE](LICENSE) file for details.

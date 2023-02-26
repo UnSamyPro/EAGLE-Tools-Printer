@@ -1,10 +1,10 @@
 @ECHO OFF
 
 SET originalFolder=%CD%
+SET FOLDER=%EAGLE_PATH%
 
 IF DEFINED EAGLE_PATH (
     ECHO EAGLE_PATH environment variable found...
-    SET FOLDER=%EAGLE_PATH%
 
     ECHO Checking for EAGLE executable...
     IF EXIST "%FOLDER%\bin\eagle.exe" (
@@ -37,11 +37,13 @@ SET "PScommand="POWERSHELL Add-Type -AssemblyName System.Windows.Forms; $FolderB
 FOR /F "usebackq tokens=*" %%Q in (`%PScommand%`) DO (
     SET FOLDER=%%Q
 )
+SET PScommand=
 :: for fucks sake; why does an empty %FOLDER% variable sometimes contain a $ sign? ... I hate windows
 IF "%FOLDER%"=="Cancel" (
     ECHO No directory selected.
     ECHO Please select the correct directory.
     ECHO.
+    SET FOLDER=
     PAUSE
     EXIT /B
     goto:eof
@@ -58,6 +60,7 @@ IF EXIST "%FOLDER%\bin\eagle.exe" (
     ECHO EAGLE executable not found.
     ECHO Please select the correct directory.
     ECHO.
+    SET FOLDER=
     PAUSE
     EXIT /B
     goto:eof
@@ -65,6 +68,7 @@ IF EXIST "%FOLDER%\bin\eagle.exe" (
 
 ECHO Setting EAGLE_PATH environment variable...
 SETX EAGLE_PATH "%FOLDER%"
+SET EAGLE_PATH=%FOLDER%
 ECHO EAGLE_PATH set to %FOLDER%
 goto program_start
 
@@ -77,14 +81,17 @@ SET getVersion= "curl -s -L https://api.github.com/repos/UnSamyPro/EAGLE-Tools-P
 FOR /F "usebackq tokens=*" %%F in (`%getVersion%`) DO (
     SET releaseVersionLine=%%F
 )
+SET getVersion=
 SET version=%releaseVersionLine:~13,-2%
-SET filename=EAGLE-Tools-Printer_%version%
+SET releaseVersionLine=
+SET filename=EAGLE-Tools-Printer-%version:~1%
 ECHO Latest version: %version%
+ECHO filename: %filename%
 
 :: cd to temp folder and make subfolder
 CD %temp%
-MKDIR EAGLE-Tools-Printer_%version%_temp
-CD EAGLE-Tools-Printer_%version%_temp
+MKDIR EAGLE-Tools-Printer-%version:~1%_temp
+CD EAGLE-Tools-Printer-%version:~1%_temp
 
 ECHO Downloading latest version...
 :: download the zip file
@@ -92,7 +99,8 @@ SET downloadCmd="curl -L -o %filename%.zip https://github.com/UnSamyPro/EAGLE-To
 FOR /F "usebackq tokens=*" %%F in (`%downloadCmd%`) DO (
     SET downloadLocation=%%F
 )
-COPY "C:\Users\SamyP\Documents\GitHub\UnSamyPro\EAGLE-Tools-Printer_%version%.zip" "%filename%.zip"
+SET downloadLocation=
+SET downloadCmd=
 
 ECHO Installing latest version...
 :: unzip the file
@@ -100,6 +108,7 @@ SET unzipCmd="tar -xvf %filename%.zip"
 FOR /F "usebackq tokens=*" %%F in (`%unzipCmd%`) DO (
     SET unzipLocation=%%F
 )
+SET unzipCmd=
 
 ECHO Installing files...
 :: move the files to the correct location
@@ -110,8 +119,8 @@ MOVE /Y "eagle.scr" "%FOLDER%\scr"
 
 ECHO Cleaning up...
 :: delete the temp folder
-@REM CD %temp%
-@REM RMDIR /S /Q EAGLE-Tools-Printer_%version%_temp
+CD %temp%
+RMDIR /S /Q EAGLE-Tools-Printer-%version:~1%_temp
 
 ECHO.
 ECHO.
@@ -124,6 +133,10 @@ ECHO.
 
 :: cd back to original folder
 CD %originalFolder%
+SET originalFolder=
+SET FOLDER=
+SET version=
+SET filename=
 goto:eof
 
 
